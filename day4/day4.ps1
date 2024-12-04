@@ -1,86 +1,62 @@
-$data = Get-Content "./day4/input.txt"
-
-function Find-XMAS {
+function Count-Xmas {
     param (
         [string[]]$grid
     )
 
+    # Define the word to search for and its length
     $word = "XMAS"
-    $wordLength = $word.Length
-    $count = 0
+    $wordLen = $word.Length
 
-    # Check all directions
+    # Define all possible directions to search for the word
+    $directions = @(
+        @(0, 1),  # right
+        @(1, 0),  # down
+        @(1, 1),  # down-right
+        @(1, -1), # down-left
+        @(0, -1), # left
+        @(-1, 0), # up
+        @(-1, -1),# up-left
+        @(-1, 1)  # up-right
+    )
+
+    # Check if a position is within the grid boundaries
+    function Is-Valid {
+        param (
+            [int]$x,
+            [int]$y,
+            [string[]]$grid
+        )
+        return $x -ge 0 -and $x -lt $grid.Length -and $y -ge 0 -and $y -lt $grid[0].Length
+    }
+
+    # Search for the word starting from a given position in a specific direction
+    function Search-From {
+        param (
+            [int]$x,
+            [int]$y,
+            [int]$dx,
+            [int]$dy,
+            [string[]]$grid,
+            [string]$word,
+            [int]$wordLen
+        )
+        for ($i = 0; $i -lt $wordLen; $i++) {
+            $nx = $x + $i * $dx
+            $ny = $y + $i * $dy
+            if (-not (Is-Valid -x $nx -y $ny -grid $grid) -or $grid[$nx][$ny] -ne $word[$i]) {
+                return $false
+            }
+        }
+        return $true
+    }
+
+    $count = 0
+    # Iterate over each cell in the grid
     for ($i = 0; $i -lt $grid.Length; $i++) {
-        for ($j = 0; $j -lt $grid[$i].Length; $j++) {
-            # Horizontal right
-            if ($j + $wordLength -le $grid[$i].Length) {
-                if ($grid[$i].Substring($j, $wordLength) -eq $word) {
-                    $count++
-                }
-            }
-            # Horizontal left
-            if ($j -ge $wordLength - 1) {
-                if ($grid[$i].Substring($j - $wordLength + 1, $wordLength) -eq $word) {
-                    $count++
-                }
-            }
-            # Vertical down
-            if ($i + $wordLength -le $grid.Length) {
-                $verticalWord = ""
-                for ($k = 0; $k -lt $wordLength; $k++) {
-                    $verticalWord += $grid[$i + $k][$j]
-                }
-                if ($verticalWord -eq $word) {
-                    $count++
-                }
-            }
-            # Vertical up
-            if ($i -ge $wordLength - 1) {
-                $verticalWord = ""
-                for ($k = 0; $k -lt $wordLength; $k++) {
-                    $verticalWord += $grid[$i - $k][$j]
-                }
-                if ($verticalWord -eq $word) {
-                    $count++
-                }
-            }
-            # Diagonal down-right
-            if ($i + $wordLength -le $grid.Length -and $j + $wordLength -le $grid[$i].Length) {
-                $diagonalWord = ""
-                for ($k = 0; $k -lt $wordLength; $k++) {
-                    $diagonalWord += $grid[$i + $k][$j + $k]
-                }
-                if ($diagonalWord -eq $word) {
-                    $count++
-                }
-            }
-            # Diagonal down-left
-            if ($i + $wordLength -le $grid.Length -and $j -ge $wordLength - 1) {
-                $diagonalWord = ""
-                for ($k = 0; $k -lt $wordLength; $k++) {
-                    $diagonalWord += $grid[$i + $k][$j - $k]
-                }
-                if ($diagonalWord -eq $word) {
-                    $count++
-                }
-            }
-            # Diagonal up-right
-            if ($i -ge $wordLength - 1 -and $j + $wordLength -le $grid[$i].Length) {
-                $diagonalWord = ""
-                for ($k = 0; $k -lt $wordLength; $k++) {
-                    $diagonalWord += $grid[$i - $k][$j + $k]
-                }
-                if ($diagonalWord -eq $word) {
-                    $count++
-                }
-            }
-            # Diagonal up-left
-            if ($i -ge $wordLength - 1 -and $j -ge $wordLength - 1) {
-                $diagonalWord = ""
-                for ($k = 0; $k -lt $wordLength; $k++) {
-                    $diagonalWord += $grid[$i - $k][$j - $k]
-                }
-                if ($diagonalWord -eq $word) {
+        for ($j = 0; $j -lt $grid[0].Length; $j++) {
+            # Check all directions from the current cell
+            foreach ($direction in $directions) {
+                if (Search-From -x $i -y $j -dx $direction[0] -dy $direction[1] -grid $grid -word $word -wordLen $wordLen) {
                     $count++
                 }
             }
@@ -90,6 +66,8 @@ function Find-XMAS {
     return $count
 }
 
-$grid = $data
-$result = Find-XMAS -grid $grid
-Write-Output "Total XMAS found: $result"
+# Read grid from input.txt
+$grid = Get-Content -Path "input.txt"
+
+# Print the count of occurrences of the word "XMAS"
+Write-Output (Count-Xmas -grid $grid)
